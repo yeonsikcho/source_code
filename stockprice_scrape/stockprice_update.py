@@ -37,10 +37,10 @@ try:
       'curPage':5
     }
 
-    con = sql.connect(host="eric-cho.com", port=3308, database="echo_blog", user="user_id", password="user_pw", charset="utf8")
+    con = sql.connect(host="eric-cho.com", port=3308, database="echo_blog", user=user_id, password=user_pw, charset="utf8")
     cursor = con.cursor() 
 
-    trade_date = datetime.datetime.today()
+    trade_date = datetime.datetime.today() - datetime.timedelta(1)
     data['schdate'] = trade_date.strftime("%Y%m%d")
     for exchange in ['STK','KSQ']:
         temp_dt = []
