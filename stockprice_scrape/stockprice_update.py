@@ -9,7 +9,7 @@ import telegram
 
 #Read Database User ID / User PW
 with open("../credentials.txt", "r") as f:
-    my_token, user_id, user_pw = f.read().split("|")
+    my_token, user_id, user_pw, _ = f.read().split("|")
 
 chat_id = 869418718
 
