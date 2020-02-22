@@ -1,10 +1,12 @@
-#Script to compute adjusted stock prices
+#2020-02-21
+#Script to compute adjusted stock prices for all historical prices
+#http://eric-cho.com/2020-02-21/stock-price-database-3
 
 import MySQLdb as sql
 
 #Read Database User ID / User PW
 with open("../credentials.txt", "r") as f:
-    _, user_id, user_pw = f.read().split("|")
+    _, user_id, user_pw, _ = f.read().split("|")
 
 #Connect to Database
 con = sql.connect(host="eric-cho.com", port=3308, database="echo_blog", user=user_id, password=user_pw, charset="utf8")

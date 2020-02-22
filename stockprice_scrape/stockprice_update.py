@@ -1,5 +1,11 @@
 #2020-02-17
 #Daily stock price update code
+#http://eric-cho.com/2020-02-17/stock-price-database-2
+
+#2020-02-21
+#Daily adjust price computation
+#http://eric-cho.com/2020-02-21/stock-price-database-3
+
 import requests
 import json
 import time
@@ -39,8 +45,13 @@ try:
 
     con = sql.connect(host="eric-cho.com", port=3308, database="echo_blog", user=user_id, password=user_pw, charset="utf8")
     cursor = con.cursor() 
+    
+    #>>>2020-02-21 compute most recent tradedate
+    cursor.execute("select max(tradedate) from stockprices limit 1")
+    last_tradedate = cursor.fetchall()[0][0]
+    #>>>
 
-    trade_date = datetime.datetime.today() - datetime.timedelta(1)
+    trade_date = datetime.datetime.today()
     data['schdate'] = trade_date.strftime("%Y%m%d")
     for exchange in ['STK','KSQ']:
         temp_dt = []
@@ -56,11 +67,44 @@ try:
                 break
             for d in dt:
                 #2020-02-21 Added adj_prc
-                cursor.execute("insert into stockprices values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",[d['isu_cd'],trade_date, d['opnprc'].replace(",",""),d['hgprc'].replace(",",""), d['lwprc'].replace(",",""), d['isu_cur_pr'].replace(",",""),None,d['lst_stk_vl'].replace(",",""), exchange])
+                cursor.execute("insert into stockprices values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",[d['isu_cd'],trade_date, d['opnprc'].replace(",",""),d['hgprc'].replace(",",""), d['lwprc'].replace(",",""), d['isu_cur_pr'].replace(",",""),d['isu_cur_pr'].replace(",",""),d['lst_stk_vl'].replace(",",""), exchange])
             con.commit()
             time.sleep(2)
+            
+    #>>>2020-02-21 compute adjusted prices for stocks that resumed trading
+    if n_items > 0:        
+        #Get list of stocks that were suspended in previous trading date
+        cursor.execute("select distinct(isu_cd) from stockprices where tradedate = %s and open_prc = 0",[last_tradedate])
+        stockids = cursor.fetchall()
+        #Get list of stocks that resumed today        
+        for idx,[stockid] in enumerate(stockids):
+            cursor.execute("select tradedate, open_prc, cls_prc, list_stock_vol from stockprices where isu_cd = %s order by tradedate desc", [stockid])
+            result = cursor.fetchall()
+            for i, [tradedate, open_prc, cls_prc, list_stock_vol] in enumerate(result):
+                if i == 0: #Set scale to 1 at most recent observation
+                    if open_prc == 0: #if the stock is still suspended, pass
+                        break
+                    scale = 1
+                    bot.sendMessage(chat_id = chat_id, text = f"{stockid} adjusted price updated")
+                elif next_open_prc !=0 and open_prc ==0: #Identify Suspension End Date
+                    print(tradedate, open_prc, cls_prc, list_stock_vol)
+                    if list_stock_vol == next_list_stock_vol: #Case 1
+                        pass
+                    elif next_list_stock_vol>list_stock_vol: #Case 2
+                        scale *= (list_stock_vol/next_list_stock_vol)
+                    elif list_stock_vol%next_list_stock_vol==0: #Case 3
+                        scale *= (list_stock_vol/next_list_stock_vol)
+                    else: # Case 4
+                        scale *= next_open_prc / cls_prc
+                #Insert computed adjust price to database
+                print(scale*cls_prc, stockid, tradedate)
+                cursor.execute(f"update stockprices set adj_prc = %s where isu_cd = %s and tradedate = %s", [scale*cls_prc, stockid, tradedate])
+                next_tradedate, next_open_prc, next_cls_prc, next_list_stock_vol = tradedate, open_prc, cls_prc, list_stock_vol
+            con.commit()
+    #>>>
+        
 except Exception as e:
     bot.sendMessage(chat_id = chat_id, text = str(e))
-
+con.close()
 bot.sendMessage(chat_id = chat_id, text = "Stock Price Collection Ended")
 
