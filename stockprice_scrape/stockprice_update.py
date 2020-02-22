@@ -1,3 +1,5 @@
+#2020-02-17
+#Daily stock price update code
 import requests
 import json
 import time
@@ -5,7 +7,10 @@ import datetime
 import MySQLdb as sql
 import telegram
 
-my_token = '979633634:AAGYggRYyVocVagOgVFhQFcTNm2jcGSpe4E'
+#Read Database User ID / User PW
+with open("../credentials.txt", "r") as f:
+    my_token, user_id, user_pw = f.read().split("|")
+
 chat_id = 869418718
 
 bot = telegram.Bot(token = my_token)
@@ -32,7 +37,7 @@ try:
       'curPage':5
     }
 
-    con = sql.connect(host="eric-cho.com", port=3308, database="echo_blog", user="eric", password="1127ychL!", charset="utf8")
+    con = sql.connect(host="eric-cho.com", port=3308, database="echo_blog", user="user_id", password="user_pw", charset="utf8")
     cursor = con.cursor() 
 
     trade_date = datetime.datetime.today()
@@ -50,7 +55,8 @@ try:
                 bot.sendMessage(chat_id = chat_id, text = f"{exchange} page {i-1} is last. {n_items} items")
                 break
             for d in dt:
-                cursor.execute("insert into stockprices values (%s,%s,%s,%s,%s,%s,%s,%s)",[d['isu_cd'],trade_date, d['opnprc'].replace(",",""),d['hgprc'].replace(",",""), d['lwprc'].replace(",",""), d['isu_cur_pr'].replace(",",""),d['lst_stk_vl'].replace(",",""), exchange])
+                #2020-02-21 Added adj_prc
+                cursor.execute("insert into stockprices values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",[d['isu_cd'],trade_date, d['opnprc'].replace(",",""),d['hgprc'].replace(",",""), d['lwprc'].replace(",",""), d['isu_cur_pr'].replace(",",""),None,d['lst_stk_vl'].replace(",",""), exchange])
             con.commit()
             time.sleep(2)
 except Exception as e:
