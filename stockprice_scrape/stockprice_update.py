@@ -12,8 +12,10 @@ import time
 import datetime
 import MySQLdb as sql
 import telegram
+import os
 
 #Read Database User ID / User PW
+os.chdir(os.path.abspath(__file__)) #change directory to file location
 with open("../credentials.txt", "r") as f:
     my_token, user_id, user_pw, _ = f.read().split("|")
 
