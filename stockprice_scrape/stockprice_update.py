@@ -67,7 +67,8 @@ try:
                 break
             for d in dt:
                 #2020-02-21 Added adj_prc
-                cursor.execute("insert into stockprices values (%s,%s,%s,%s,%s,%s,%s,%s,%s)",[d['isu_cd'],trade_date, d['opnprc'].replace(",",""),d['hgprc'].replace(",",""), d['lwprc'].replace(",",""), d['isu_cur_pr'].replace(",",""),d['isu_cur_pr'].replace(",",""),d['lst_stk_vl'].replace(",",""), exchange])
+                #2020-02-24 Added month_end, year_end
+                cursor.execute("insert into stockprices values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",[d['isu_cd'],trade_date, d['opnprc'].replace(",",""),d['hgprc'].replace(",",""), d['lwprc'].replace(",",""), d['isu_cur_pr'].replace(",",""),d['isu_cur_pr'].replace(",",""),d['lst_stk_vl'].replace(",",""), exchange, None, None])
             con.commit()
             time.sleep(2)
             
@@ -101,7 +102,12 @@ try:
                 cursor.execute(f"update stockprices set adj_prc = %s where isu_cd = %s and tradedate = %s", [scale*cls_prc, stockid, tradedate])
                 next_tradedate, next_open_prc, next_cls_prc, next_list_stock_vol = tradedate, open_prc, cls_prc, list_stock_vol
             con.commit()
-    #>>>
+    #>>>2020-02-24 when month / year changed edit month_end, year_end index
+    if n_items > 0:
+        if last_tradedate.month != trade_date.month:
+            cursor.execute(f"update stockprices set month_end = 1 where tradedate = %s", [last_tradedate])
+        if last_tradedate.year != trade_date.year:
+            cursor.execute(f"update stockprices set year_end = 1 where tradedate = %s", [last_tradedate])
         
 except Exception as e:
     bot.sendMessage(chat_id = chat_id, text = str(e))
