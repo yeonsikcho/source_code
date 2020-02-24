@@ -90,7 +90,6 @@ try:
                     scale = 1
                     bot.sendMessage(chat_id = chat_id, text = f"{stockid} adjusted price updated")
                 elif next_open_prc !=0 and open_prc ==0: #Identify Suspension End Date
-                    print(tradedate, open_prc, cls_prc, list_stock_vol)
                     if list_stock_vol == next_list_stock_vol: #Case 1
                         pass
                     elif next_list_stock_vol>list_stock_vol: #Case 2
@@ -100,7 +99,6 @@ try:
                     else: # Case 4
                         scale *= next_open_prc / cls_prc
                 #Insert computed adjust price to database
-                print(scale*cls_prc, stockid, tradedate)
                 cursor.execute(f"update stockprices set adj_prc = %s where isu_cd = %s and tradedate = %s", [scale*cls_prc, stockid, tradedate])
                 next_tradedate, next_open_prc, next_cls_prc, next_list_stock_vol = tradedate, open_prc, cls_prc, list_stock_vol
             con.commit()
